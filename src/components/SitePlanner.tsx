@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import html2pdf from 'html2pdf.js';
 import { AppStep, SitemapPage, PageWireframe, SavedSitePlan, WireframeSection, SerpPreviewContent, SeoStrategyInsight } from '../types';
@@ -36,7 +37,7 @@ interface SitePlannerProps {
 }
 
 const API_KEY_CONFIGURED = !!import.meta.env.VITE_API_KEY;
-const MODEL_NAME = 'gemini-2.5-flash-preview-04-17';
+const MODEL_NAME = 'gemini-2.5-flash';
 const LOCAL_STORAGE_KEY = 'aiSitePlannerData';
 
 const SitemapReviewChecklist: React.FC = () => {
@@ -397,18 +398,6 @@ export const SitePlanner: React.FC<SitePlannerProps> = ({
     handleDescriptionSubmit(); 
   }
 
-  const handleRegenerateWireframesOnly = async () => {
-    if (sitemap && sitemap.length > 0 && companyDescription) {
-      setPageWireframes(sitemap.map(p => ({ pageId: p.id, pageName: p.pageName, sections: [], isLoading: true }))); 
-      setIsSettingsOpen(false);
-      resetEnhancementsState(true); 
-      await triggerWireframeGeneration(sitemap, companyDescription, temperature);
-    } else {
-      setError("Cannot regenerate wireframes without a sitemap and company description. Please generate sitemap first.");
-      setCurrentStep(AppStep.DESCRIPTION_INPUT);
-    }
-  }
-
   // Enhancement Generation Handlers
   const handleGenerateLdJson = async () => {
     if (!sitemap || !companyDescription) return;
@@ -633,7 +622,7 @@ export const SitePlanner: React.FC<SitePlannerProps> = ({
                       placeholder="e.g., A local bakery specializing in custom cakes and pastries, offering online ordering and delivery."
                       value={companyDescription}
                       onChange={(e) => setCompanyDescription(e.target.value)}
-                      disabled={isLoading || !API_KEY_CONFIGURED}
+                      disabled={isLoading || !API_KEY_CONFIGURED || currentStep !== AppStep.DESCRIPTION_INPUT}
                       aria-required="true"
                     />
                   </div>
@@ -651,11 +640,11 @@ export const SitePlanner: React.FC<SitePlannerProps> = ({
                       </div>
                     )
                   )}
-                  {sitemap && sitemap.length > 0 && (currentStep === AppStep.SITEMAP_DISPLAY || currentStep === AppStep.WIREFRAME_DISPLAY || currentStep === AppStep.WIREFRAME_GENERATION_LOADING || currentStep === AppStep.ENHANCEMENTS_DISPLAY || (currentStep === AppStep.ERROR && sitemap)) && <SitemapReviewChecklist />}
+                  {sitemap && sitemap.length > 0 && (currentStep === AppStep.SITEMAP_DISPLAY || currentStep === AppStep.WIREFRAME_GENERATION_LOADING || currentStep === AppStep.ENHANCEMENTS_DISPLAY || (currentStep === AppStep.ERROR && sitemap)) && <SitemapReviewChecklist />}
               </div>
           )}
 
-          {sitemap && (currentStep === AppStep.SITEMAP_DISPLAY || currentStep === AppStep.WIREFRAME_GENERATION_LOADING || currentStep === AppStep.WIREFRAME_DISPLAY || currentStep === AppStep.ENHANCEMENTS_DISPLAY || (currentStep === AppStep.ERROR && sitemap)) && !isLoading && (
+          {sitemap && (currentStep === AppStep.SITEMAP_DISPLAY || currentStep === AppStep.WIREFRAME_GENERATION_LOADING || currentStep === AppStep.ENHANCEMENTS_DISPLAY || (currentStep === AppStep.ERROR && sitemap)) && !isLoading && (
             <div className="mt-2 pt-8 border-t border-slate-200">
               <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
                 <h3 className="text-xl sm:text-2xl font-semibold text-slate-700 mb-2 sm:mb-0">Generated Site Plan:</h3>
@@ -694,7 +683,7 @@ export const SitePlanner: React.FC<SitePlannerProps> = ({
                               <div className={`mt-1 p-4 ${hasWireframeError ? 'bg-red-50' : 'bg-sky-50/50'}`}>
                                 <h5 className={`text-sm font-semibold ${hasWireframeError ? 'text-red-700' : 'text-sky-800'} mb-3 flex items-center`}>
                                     <Icon name={hasWireframeError ? "ExclamationTriangleIcon" : "SquaresIcon"} className="w-4 h-4 mr-2" />
-                                    {hasWireframeError ? 'Wireframe Generation Issue:' : 'Skeleton Wireframe Sections:'}
+                                    {hasWireframeError ? 'Wireframe Generation Issue:' : 'Visual Skeleton Wireframe:'}
                                 </h5>
                                 <div className="space-y-3">
                                     {wireframeForPage.sections.map(section => (
@@ -717,24 +706,6 @@ export const SitePlanner: React.FC<SitePlannerProps> = ({
                   );
                 })}
               </div>
-              {!isLoading && sitemap && sitemap.length > 0 && currentStep !== AppStep.WIREFRAME_GENERATION_LOADING && currentStep !== AppStep.ENHANCEMENTS_DISPLAY && (
-                  <div className="mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row gap-3">
-                      {(currentStep === AppStep.SITEMAP_DISPLAY || (currentStep === AppStep.ERROR && !pageWireframes?.some(pw => pw.sections.length > 0) && sitemap)) && (
-                          <Button 
-                              onClick={async () => {
-                                  if (sitemap && companyDescription) {
-                                      setPageWireframes(sitemap.map(p => ({ pageId: p.id, pageName: p.pageName, sections: [], isLoading: true })));
-                                      await triggerWireframeGeneration(sitemap, companyDescription, temperature);
-                                  }
-                              }} 
-                              className="w-full" 
-                              disabled={isLoading || !API_KEY_CONFIGURED || !companyDescription}
-                          >
-                              Generate Wireframes for this Sitemap
-                          </Button>
-                      )}
-                  </div>
-              )}
             </div>
           )}
         </div> 
@@ -752,19 +723,19 @@ export const SitePlanner: React.FC<SitePlannerProps> = ({
                 {errorLdJson && <p className="text-xs text-red-600 bg-red-50 p-2 rounded mb-2">{errorLdJson}</p>}
                 {isLoadingLdJson && <Loader message="Generating LD+JSON..." />}
                 {!isLoadingLdJson && ldJsonSchema && ldJsonSchema.length > 0 && (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                  <div className="space-y-3 max-h-96 overflow-y-auto p-1 bg-slate-200/50 rounded-md">
                     {ldJsonSchema.map((schema, index) => (
-                      <div key={index} className="bg-slate-100 p-3 rounded-md">
-                        <p className="text-xs font-semibold text-slate-600 mb-1">Schema {index + 1}: {schema['@type'] || 'Unknown Type'}</p>
-                        <pre className="text-xs overflow-x-auto whitespace-pre-wrap break-all">
+                      <details key={index} className="bg-slate-100 rounded-md">
+                        <summary className="text-xs font-semibold text-slate-600 p-2 cursor-pointer">Schema {index + 1}: <span className="font-bold text-indigo-700">{schema['@type'] || 'Unknown Type'}</span></summary>
+                        <pre className="text-xs overflow-x-auto whitespace-pre-wrap break-all p-2 border-t border-slate-200 bg-white">
                           <code>{JSON.stringify(schema, null, 2)}</code>
                         </pre>
-                      </div>
+                      </details>
                     ))}
                   </div>
                 )}
                 {!isLoadingLdJson && (!ldJsonSchema || ldJsonSchema.length === 0) && (
-                    <p className="text-sm text-slate-500 mb-3">Generate LD+JSON schemas for your website to improve SEO visibility.</p>
+                    <p className="text-sm text-slate-500 mb-3">Generate a rich set of LD+JSON schemas for your website to improve SEO visibility.</p>
                 )}
                 <Button onClick={handleGenerateLdJson} disabled={isLoadingLdJson || !API_KEY_CONFIGURED} size="sm" className="mt-3 w-full">
                   {ldJsonSchema && ldJsonSchema.length > 0 ? "Regenerate LD+JSON" : "Generate LD+JSON"}
@@ -815,7 +786,7 @@ export const SitePlanner: React.FC<SitePlannerProps> = ({
                 {errorSeoStrategy && <p className="text-xs text-red-600 bg-red-50 p-2 rounded mb-2">{errorSeoStrategy}</p>}
                 {isLoadingSeoStrategy && <Loader message="Generating SEO Strategy..." />}
                 {!isLoadingSeoStrategy && seoStrategy && (
-                   <div className="space-y-3 max-h-80 overflow-y-auto">
+                   <div className="space-y-3 max-h-80 overflow-y-auto p-1">
                     {seoStrategy.map(item => (
                       <div key={item.id} className="p-2 bg-slate-100 rounded">
                         <h6 className="text-sm font-medium text-slate-700">{item.title}</h6>

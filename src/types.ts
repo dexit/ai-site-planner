@@ -23,7 +23,6 @@ export enum AppStep {
   SITEMAP_GENERATION_LOADING = 'SITEMAP_GENERATION_LOADING',
   SITEMAP_DISPLAY = 'SITEMAP_DISPLAY', // Sitemap ready, wireframes might be next or loading
   WIREFRAME_GENERATION_LOADING = 'WIREFRAME_GENERATION_LOADING', 
-  WIREFRAME_DISPLAY = 'WIREFRAME_DISPLAY', // Wireframes are generated, but enhancements might not be active yet
   ENHANCEMENTS_DISPLAY = 'ENHANCEMENTS_DISPLAY', // All core generation done, enhancements section is active.
   ERROR = 'ERROR'
 }
@@ -37,7 +36,7 @@ export interface ChecklistItem {
 }
 
 export interface ChecklistSection {
-  id: string;
+  id:string;
   title: string;
   items: ChecklistItem[];
   isInitiallyExpanded?: boolean; // UI hint for ChecklistDisplay

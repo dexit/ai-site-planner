@@ -4,16 +4,19 @@ Generate professional sitemaps and wireframes for your website in minutes using 
 
 ## Features
 
-*   AI-powered sitemap generation.
-*   AI-powered wireframe generation for each page in the sitemap.
-*   Customizable AI creativity (temperature) setting.
-*   Save, load, and reset site plans using browser local storage.
-*   Downloadable site plan in JSON format.
-*   Generation of basic LD+JSON schema.
-*   AI-driven site enhancement suggestions.
-*   AI-generated Go-Live and Web Development checklists.
-*   Comprehensive static SEO checklist.
-*   Responsive design.
+*   **Step-by-Step Guided UI**: A clear navigator guides you through the process: Describe -> Plan & Wireframe -> Enhance.
+*   **AI-Powered Sitemap Generation**: Instantly get a logical sitemap based on your company description.
+*   **Visual Skeleton Wireframes**: Instead of just text, see a visual representation of each page's layout using skeleton loaders.
+*   **Comprehensive Enhancements**:
+    *   **LD+JSON Schema Generation**: Creates a rich array of schemas (`Organization`, `WebSite`, `WebPage`, etc.) for advanced SEO.
+    *   **SERP Preview**: See how your site might look on Google's search results.
+    *   **AI SEO Strategy**: Get tailored, actionable SEO advice.
+    *   **AI-Generated Checklists**: Get checklists for going live and for web development.
+*   **Export & Save**:
+    *   Save your progress to local storage and load it later.
+    *   Export your full site plan as a JSON file.
+    *   Export a formatted PDF of your plan for easy sharing.
+*   **Customizable AI Creativity**: Adjust the AI's "temperature" for more precise or more creative results.
 
 ## Prerequisites
 
@@ -28,17 +31,16 @@ This application uses the Google Gemini API. You need to obtain an API key from 
 2.  Create an API key.
 3.  **Important**: This API key is sensitive. Do not share it publicly or commit it to version control.
 
-Once you have your API key:
+Once you have your API key, you must make it available to the application as an environment variable.
 
-1.  In the root directory of this project, create a new file named `.env`.
-2.  Copy the contents of `.env.example` into your new `.env` file.
-3.  Replace `"YOUR_GEMINI_API_KEY_HERE"` with your actual Gemini API key.
+1.  In the root directory of this project, create a new file named `.env`. If you see a `.env.example` file, you can rename it to `.env`.
+2.  Inside your `.env` file, add the following line, replacing `YOUR_GEMINI_API_KEY_HERE` with your actual API key:
 
-Example `.env` file:
 ```
-VITE_API_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+VITE_API_KEY="YOUR_GEMINI_API_KEY_HERE"
 ```
-The application will not function correctly without this API key.
+
+**Note**: The `VITE_` prefix is required by the Vite build tool to expose the variable to the client-side code. The application will not function without this key.
 
 ## Setup and Installation
 
@@ -86,22 +88,9 @@ The application will not function correctly without this API key.
     ```
     This command serves the contents of the `dist/` folder locally, allowing you to test the production build before deployment.
 
-## Debugging
-
-Effective debugging can be done using your browser's built-in developer tools and the React Developer Tools extension.
-
-*   **Browser Developer Tools**:
-    *   **Console Tab**: Check for any errors, warnings, or `console.log` messages from the application. The `geminiService.ts` logs information about API calls and JSON parsing.
-    *   **Network Tab**: Inspect API requests to the Gemini API. You can see the request payload, headers, and the raw response from the server. This is useful for diagnosing API-related issues.
-    *   **Sources Tab**: You can set breakpoints in your TypeScript/TSX code (thanks to Vite's source maps) and step through execution to understand the application flow and variable states.
-*   **React Developer Tools**:
-    *   This browser extension is invaluable for inspecting React component hierarchies, their props, and state.
-    *   You can find it for [Chrome](https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi) and [Firefox](https://addons.mozilla.org/en-US/firefox/addon/react-devtools/).
-*   **Logging**: The application includes `console.error` and `console.warn` statements in key areas, particularly within `geminiService.ts` for API interactions and JSON parsing, and in `SitePlanner.tsx` for state management and user actions. Review these logs for insights into issues.
-
 ## Project Structure
 
-*   `public/`: Contains static assets that are copied directly to the build output (e.g., `vite.svg`).
+*   `public/`: Contains static assets that are copied directly to the build output.
 *   `src/`: Contains all the application's source code.
     *   `components/`: React components, organized into general UI components and specific feature components.
         *   `checklists/`: Data for static checklists.
@@ -114,7 +103,7 @@ Effective debugging can be done using your browser's built-in developer tools an
 *   `vite.config.ts`: Configuration for the Vite build tool.
 *   `package.json`: Project metadata, dependencies, and scripts.
 *   `README.md`: This file.
-*   `.env.example`: Template for environment variables.
+*   `.env`: Local environment variables (create this yourself).
 *   `.gitignore`: Specifies intentionally untracked files that Git should ignore.
 *   `metadata.json`: Application metadata.
 

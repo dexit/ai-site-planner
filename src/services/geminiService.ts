@@ -9,7 +9,7 @@ if (!API_KEY) {
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY! });
-const modelName = 'gemini-2.5-flash-preview-04-17';
+const modelName = 'gemini-2.5-flash';
 
 const parseJsonFromResponse = <T,>(responseText: string, defaultValue: T): T => {
   let stringToParse = responseText.trim();
@@ -276,4 +276,3 @@ export const generateSeoStrategyInsights = async (companyDescription: string, si
     throw new Error(`Failed to generate SEO strategy insights. ${error instanceof Error ? error.message : String(error)}`);
   }
 };
-

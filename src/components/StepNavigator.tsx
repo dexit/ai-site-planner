@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { AppStep, SavedSitePlan, PageWireframe } from '../types';
+import { AppStep } from '../types';
 import { Icon } from './common/Icon';
 
 interface StepNavigatorProps {
@@ -7,7 +8,7 @@ interface StepNavigatorProps {
 }
 
 interface StepConfig {
-  key: AppStep | string; // Can use a more general key if needed
+  key: string; 
   label: string;
   icon: string;
   relevantSteps: AppStep[];
@@ -15,108 +16,60 @@ interface StepConfig {
 
 const stepsConfig: StepConfig[] = [
   { key: "describe", label: "Describe", icon: "ChatBubbleIcon", relevantSteps: [AppStep.DESCRIPTION_INPUT, AppStep.SITEMAP_GENERATION_LOADING] },
-  { key: "plan", label: "Plan & Wireframe", icon: "LayoutIcon", relevantSteps: [AppStep.SITEMAP_DISPLAY, AppStep.WIREFRAME_GENERATION_LOADING, AppStep.WIREFRAME_DISPLAY] },
+  { key: "plan", label: "Plan & Wireframe", icon: "LayoutIcon", relevantSteps: [AppStep.SITEMAP_DISPLAY, AppStep.WIREFRAME_GENERATION_LOADING] },
   { key: "enhance", label: "Enhance", icon: "SparklesIcon", relevantSteps: [AppStep.ENHANCEMENTS_DISPLAY] },
 ];
 
-// Helper to determine at which step an error likely occurred
-const getErrorStepIndex = (): number => {
-    const sitePlanDataString = localStorage.getItem('aiSitePlannerData');
-    let sitemapGenerated = false;
-    let allWireframesGeneratedAndValid = false;
+const getStepIndexForState = (step: AppStep): number => {
+  const index = stepsConfig.findIndex(config => config.relevantSteps.includes(step));
+  if (index !== -1) return index;
 
-    if (sitePlanDataString) {
-        try {
-            const parsedData: SavedSitePlan = JSON.parse(sitePlanDataString);
-            sitemapGenerated = !!(parsedData.sitemap && parsedData.sitemap.length > 0);
-            if (sitemapGenerated && parsedData.pageWireframes && parsedData.sitemap && parsedData.pageWireframes.length === parsedData.sitemap.length) {
-                // All wireframes are considered generated and valid if every page has sections 
-                // and none of those sections indicate an error from generation.
-                allWireframesGeneratedAndValid = parsedData.pageWireframes.every(
-                    (pw: PageWireframe) =>
-                        pw.sections &&
-                        pw.sections.length > 0 &&
-                        !pw.sections.some(s => s.id.startsWith('error-')) && // Check for explicit error sections
-                        !pw.isLoading // Ensure it's not still loading
-                );
-            }
-        } catch (e) {
-            console.error("Error parsing localStorage data in StepNavigator", e);
-            // Defaults (sitemapGenerated = false, allWireframesGeneratedAndValid = false) will apply
-        }
-    }
-
-    if (!sitemapGenerated) return 0; // Error in Describe step (or before sitemap saved)
-    if (!allWireframesGeneratedAndValid) return 1; // Error in Plan step (sitemap exists, but wireframes incomplete/error)
-    return 2; // Error in Enhance step (sitemap and wireframes seem okay, error likely in enhancements)
+  // Fallback logic for states that might not be explicitly in a step, but imply a completed step
+  if (step === AppStep.SITEMAP_DISPLAY || step === AppStep.WIREFRAME_GENERATION_LOADING) return 1;
+  if (step === AppStep.ENHANCEMENTS_DISPLAY) return 2;
+  return 0; // Default to first step
 };
 
 
 export const StepNavigator: React.FC<StepNavigatorProps> = ({ currentAppStep }) => {
+  // On error, show the step where the process was initiated
+  const activeStepOnPage = (currentAppStep === AppStep.ERROR) 
+    ? getStepIndexForState(AppStep.DESCRIPTION_INPUT) // Or could be derived from previous state
+    : getStepIndexForState(currentAppStep);
   
-  const isActive = (stepConfig: StepConfig, currentIndex: number): boolean => {
-    if (currentAppStep === AppStep.ERROR) {
-      const errorStepIndex = getErrorStepIndex();
-      return currentIndex === errorStepIndex;
-    }
-    return stepConfig.relevantSteps.includes(currentAppStep);
-  };
-  
-  const isCompleted = (stepConfig: StepConfig, currentIndex: number): boolean => {
-    if (currentAppStep === AppStep.ERROR) {
-      const errorStepIndex = getErrorStepIndex();
-      return currentIndex < errorStepIndex;
-    }
-    // For non-error states, find the index of the config that matches the currentAppStep
-    const currentMainStepIndex = stepsConfig.findIndex(s => s.relevantSteps.includes(currentAppStep));
-    
-    if (currentMainStepIndex === -1) { 
-      // Fallback if currentAppStep isn't directly in any main step's relevantSteps
-      // This could happen if AppStep enum has more granular states not explicitly listed
-      // We can try to infer completion based on common progression if needed, or assume nothing further is completed.
-      // For now, if currentAppStep is not found in any relevantSteps, assume no further steps are completed beyond what's explicitly passed.
-      // This case should ideally be minimal if relevantSteps are comprehensive.
-      if (currentAppStep === AppStep.SITEMAP_GENERATION_LOADING) return currentIndex < 0; // Describe not yet complete
-      if (currentAppStep === AppStep.WIREFRAME_GENERATION_LOADING && currentIndex < 1) return true; // Describe completed
-      return false;
-    }
-    return currentIndex < currentMainStepIndex;
-  };
-
+  const currentStepIndex = getStepIndexForState(currentAppStep);
 
   return (
-    <nav aria-label="Progress" className="mb-8 p-4 bg-slate-100 rounded-lg shadow">
+    <nav aria-label="Progress" className="mb-8 p-2 sm:p-4 bg-slate-50 rounded-lg ">
       <ol role="list" className="flex items-center justify-around space-x-2 sm:space-x-4">
         {stepsConfig.map((step, index) => {
-          const active = isActive(step, index);
-          const completed = isCompleted(step, index);
+          const isCompleted = currentStepIndex > index;
+          const isActive = currentStepIndex === index;
+          const isError = isActive && currentAppStep === AppStep.ERROR;
+
           return (
             <li key={step.label} className="relative flex-1">
               <div className="flex items-center text-sm font-medium">
-                <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full 
-                  ${active ? 'bg-indigo-600 text-white' : completed ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'}`}
+                <span className={`flex h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-full transition-colors duration-300
+                  ${isError ? 'bg-red-500 text-white' :
+                    isActive ? 'bg-indigo-600 text-white' : 
+                    isCompleted ? 'bg-indigo-500 text-white' : 
+                    'bg-slate-200 text-slate-500 group-hover:bg-slate-300'}`}
                 >
-                  <Icon name={step.icon} className="w-5 h-5" />
+                  <Icon name={isError ? 'ExclamationTriangleIcon' : step.icon} className="w-5 h-5 sm:w-6 sm:h-6" />
                 </span>
-                <span className={`ml-2 hidden sm:block ${active ? 'text-indigo-600' : completed ? 'text-slate-700' : 'text-slate-500'}`}>
+                <span className={`ml-2 hidden sm:block font-semibold 
+                  ${isError ? 'text-red-600' :
+                    isActive ? 'text-indigo-600' : 
+                    isCompleted ? 'text-slate-700' : 
+                    'text-slate-500'}`}
+                >
                   {step.label}
                 </span>
               </div>
               {index < stepsConfig.length - 1 && (
-                <div className="absolute inset-0 top-4 left-auto right-0 hidden w-full sm:block" aria-hidden="true">
-                  <svg
-                    className="h-full w-full text-slate-300"
-                    viewBox="0 0 22 80"
-                    fill="none"
-                    preserveAspectRatio="none"
-                  >
-                    <path
-                      d="M0 -2L20 40L0 82"
-                      vectorEffect="non-scaling-stroke"
-                      stroke="currentcolor"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[calc(50%-1px)] w-[calc(100%-2.5rem)] sm:w-[calc(100%-3rem)] h-0.5 bg-slate-300" aria-hidden="true">
+                  <div className={`h-0.5 rounded-full bg-indigo-500 transition-all duration-500 ${isCompleted || isActive ? 'w-full' : 'w-0'}`}></div>
                 </div>
               )}
             </li>

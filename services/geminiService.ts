@@ -9,7 +9,7 @@ if (!API_KEY) {
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY! });
-const modelName = 'gemini-2.5-flash-preview-04-17'; // Consistent model name
+const modelName = 'gemini-2.5-flash'; // Consistent model name
 
 const parseJsonFromResponse = <T,>(responseText: string, defaultValue: T): T => {
   let stringToParse = responseText.trim();

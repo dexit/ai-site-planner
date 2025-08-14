@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { SerpPreviewContent } from '../types';
 import { Icon } from './common/Icon';
